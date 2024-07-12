@@ -1,0 +1,133 @@
+Estrutura de dados principal:
+struct node{
+===============ENCADEAMENTO================ 
+  Node* esq    → Nó filho à esquerda
+  Node* dir    → Nó filho à direita
+===============CONTEÚDO====================
+  int peso     → Peso do nó
+  char  c      → Caractere representado ou '11111111' (ler observações abaixo)
+  Node* in_esq → Codificação para bit 0
+  Node* in_dir → Codificação para bit 1
+}
+
+Definições:
+ → O termo "caractere" — no âmbito desta documentação e o código ao qual faz referência — diz respeito a qualquer sequência de 8 bits, independente de seu significado em qualquer codificação adotada, análogo ao termo "byte".
+ → Os nós considerados "filhos" propriamente ditos de outro nó são os encadeados pelos ponteiros "esq" e "dir". Tendo isto em mente, um nó considerado "nó folha" é aquele cujos valores de "esq" e "dir" são iguais a NULL. Nós fora desta definição são chamados "nós galho".
+ → Para evitar ambiguidades, os ponteiros "esq" e "dir" também são chamados "filhos externos" de um nó.
+ → Os ponteiros "in_esq" e "in_dir" são chamados "filhos internos" de um nó, e não interferem na definição de um "nó folha" ou "nó galho".
+ → A sequência de ponteiros para acessar um determinado nó "B" a partir de um nó raiz "A" chama-se "caminho de A até B". Exemplo:
+se (A→dir→dir→esq→dir == &B), então dir→dir→esq→dir é o "caminho" de "A" a "B".
+ → Para auxiliar na codificação dos caracteres, um caminho através de filhos internos (ponteiros in_esq e in_dir) pode ser denotado por uma sequência de bits, onde um valor "0" indica o ponteiro "in_esq" e o valor "1" indica um ponteiro "in_dir". Exemplo:
+"O caminho '10110' partindo do nó 'A' " tem o mesmo sentido de "A→in_dir→in_esq→in_dir→in_dir→in_esq".
+ → Um nó que tem filhos internos é chamado "nó codificador".
+ → Cada nó pode ter até 4 filhos (2 filhos internos e 2 filhos externos), caracterizando uma árvore "quaternária", porém durante a execução do programa apenas um par de filhos (interno ou externo) é considerado por vez para percorrer a árvore, caracterizando o comportamento de uma ABB.
+
+Exemplo:
+struct node1{
+  (esq) NULL
+  (dir) &node4
+
+  (peso) 3
+  (c) 'm'
+  (in_esq) NULL
+  (in_dir) NULL
+}
+
+struct node4{
+  (esq) NULL
+  (dir)  NULL
+
+  (peso) 4
+  (c)  '\0'
+  (in_esq) &node2
+  (in_dir) &node3
+}
+
+struct node2{
+  (esq) NULL
+  (dir) NULL
+
+  (peso) 2
+  (c) 's'
+  (in_esq) NULL
+  (in_dir) NULL
+}
+
+struct node3{
+  (esq) NULL
+  (dir) NULL
+
+  (peso) 2
+  (c) ' '
+  (in_esq) NULL
+  (in_dir) NULL
+}
+OBS: ver ilustração 2 (passo 3 da ilustração 1 com os nomes nos nós, tem que fazer ainda)
+
+Sequência geral de execução:
+Compactação:
+1 - Abrir o arquivo alvo a ser compactado;
+2 - Ler e salvar a contagem dos caracteres do arquivo em um vetor "V";
+3 - Criar um nó para cada elemento não-zero de "V" e encadealos em uma 
+ABB ARV1 (usando os filhos externos), juntamente com um caractere "FA" indicador
+de fim de arquivo, representado por uma sequencia de bytes não utilizada;
+4 - Repetir os seguintes passos até que ARV1 contenha apenas 1 nó:
+  i) Encontrar os 2 nós de menor peso de ARV1 — "A" e "B";
+  ii) Criar um novo nó folha "C" que tenha "A" e "B" como filhos internos,  cujo
+peso seja a soma dos pesos de "A" e "B" e cujo campo "c" tenha o valor '11111111';
+  iii) Retirar "A" e "B" de ARV1, mantendo-os salvos na memória;
+  iv) Inserir "C" em ARV1;
+
+Após estes passos, os caminhos dos filhos internos de ARV1 representação a 
+codificação Huffman dos caracteres do arquivo alvo da seguinte maneira:
+→ Um ponteiro "in_esq" no caminho até o nó que contém o caractere representa um 
+bit 0
+→ Um ponteiro "in_dir" no caminho até o nó que contém o caractere representa um 
+bit 1
+
+5 - Escrever no cabeçalho do arquivo de saída a árvore de codificação da seguinte maneira:
+  → Primeiros 8 bits: byte do indicador de fim de arquivo "FA";
+  → Codificação pre-order: [no raiz][filho esquerdo][filho direito]
+  → Representação de um nó galho: um bit "0";
+  → Representação de um nó folha: um bit "1" seguido de 8 bits que representam o caractere armazenado pelo caminho até aquele nó;
+
+6 - ler novamente o arquivo de entrada, caracter por caracter, e escrever no arquivo de saída a respectiva codificação daquele caracter;
+
+7 - Escrever no arquivo de saída um indicador de fim de arquivo "FA"
+
+8 - Fechar o arquivo de entrada;
+
+9 - Abrir o arquivo de saída para escrita e escrever seu conteúdo;
+
+10 - Fechar o arquivo de saída
+
+
+
+Descompactação:
+1 - Abrir o arquivo alvo a ser descompactado;
+
+2 - Ler o cabeçalho do arquivo compactado alvo;
+
+2 - Converter os bits lidos de volta para a arvore de codificação ARV2 do seguinte modo:
+  → Ler os primeiros 8 bits do arquivo, que representam o indicador "FA";
+  → Continuar a leitura do arquivo, bit a bit;
+  → Caso o bit lido seja "0" (representando um no galho), encadear um no     galho
+    em ARV2;
+  → Caso o bit lido seja "1" (representando um no folha), encadear um no     folha em 
+    ARV2 que guarde em seu campo "c" os 8 próximos bits lidos.
+
+3 - Continuar a leitura do arquivo, bit a bit, e percorrer a arvore ARV2 para a 
+esquerda ou direita dependendo do bit lido (esquerda caso "0", direita caso "1");
+
+3.1 - Caso chegue em um nó folha que não represente "FA", escrever o byte guardado nele no arquivo de saída e retornar à raiz de ARV2;
+
+3.2 - Caso chegue no nó representando "FA", encerrar o programa;
+
+4 - Repetir o passo 3 até que que o mesmo encerre o programa (ler 3.2).
+
+
+
+
+OBSERVAÇÕES E CASOS INTERESSANTES:
+1 - A implementação impede que haja um nó com um único filho interno, mas não impede que um nó tenha tanto filhos internos quanto externos.
+2 - Não foram realizados estudos sobre a eficiência de métodos de balanceamento de árvore para este projeto, pois este assunto foge do escopo da disciplina.
