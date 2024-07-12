@@ -12,4 +12,4 @@ This will generate the compacted file "[file_name].hff"
 
 To decompress a compressed file created using this program:
 ```./huffman -d [compacted_file_name]```
-This will generate the original uncompressed file, with 4 less characters in the name (intended to remove the ".hff" extension)
+This will generate the original uncompressed file, with the last 4 characters of [compacted_fine_name] trimmed (intended to remove the ".hff" extension)
